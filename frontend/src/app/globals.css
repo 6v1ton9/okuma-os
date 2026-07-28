@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: hsl(0, 0%, 100%);
+  --color-foreground: hsl(0, 0%, 9%);
+  --color-card: hsl(0, 0%, 100%);
+  --color-card-foreground: hsl(0, 0%, 9%);
+  --color-popover: hsl(0, 0%, 100%);
+  --color-popover-foreground: hsl(0, 0%, 9%);
+  --color-primary: hsl(221, 83%, 53%);
+  --color-primary-foreground: hsl(0, 0%, 100%);
+  --color-secondary: hsl(0, 0%, 96%);
+  --color-secondary-foreground: hsl(0, 0%, 9%);
+  --color-muted: hsl(0, 0%, 96%);
+  --color-muted-foreground: hsl(0, 0%, 45%);
+  --color-accent: hsl(0, 0%, 96%);
+  --color-accent-foreground: hsl(0, 0%, 9%);
+  --color-destructive: hsl(0, 84%, 60%);
+  --color-destructive-foreground: hsl(0, 0%, 100%);
+  --color-border: hsl(0, 0%, 90%);
+  --color-input: hsl(0, 0%, 90%);
+  --color-ring: hsl(221, 83%, 53%);
+  --radius: 0rem;
+}
+
+.dark {
+  --color-background: hsl(0, 0%, 4%);
+  --color-foreground: hsl(0, 0%, 93%);
+  --color-card: hsl(0, 0%, 6%);
+  --color-card-foreground: hsl(0, 0%, 93%);
+  --color-popover: hsl(0, 0%, 6%);
+  --color-popover-foreground: hsl(0, 0%, 93%);
+  --color-primary: hsl(217, 91%, 60%);
+  --color-primary-foreground: hsl(0, 0%, 100%);
+  --color-secondary: hsl(0, 0%, 11%);
+  --color-secondary-foreground: hsl(0, 0%, 93%);
+  --color-muted: hsl(0, 0%, 11%);
+  --color-muted-foreground: hsl(0, 0%, 65%);
+  --color-accent: hsl(0, 0%, 11%);
+  --color-accent-foreground: hsl(0, 0%, 93%);
+  --color-destructive: hsl(63, 0%, 31%);
+  --color-destructive-foreground: hsl(0, 0%, 100%);
+  --color-border: hsl(0, 0%, 15%);
+  --color-input: hsl(0, 0%, 15%);
+  --color-ring: hsl(217, 91%, 60%);
+}
+
+/* Base styles */
+* {
+  border-color: hsl(0, 0%, 90%);
+}
+
+.dark * {
+  border-color: hsl(0, 0%, 15%);
+}
+
+body {
+  background-color: hsl(0, 0%, 100%);
+  color: hsl(0, 0%, 9%);
+}
+
+.dark body {
+  background-color: hsl(0, 0%, 4%);
+  color: hsl(0, 0%, 93%);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(0, 0%, 90%);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(0, 0%, 15%);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(0, 0%, 45%);
+}
+
+/* Status colors */
+.status-pending {
+  background-color: #EAB308;
+  color: #000;
+}
+.status-confirmed {
+  background-color: #22C55E;
+  color: #fff;
+}
+.status-unavailable {
+  background-color: #60A5FA;
+  color: #fff;
+}
+.status-completed {
+  background-color: #6B7280;
+  color: #fff;
+}
+.status-cancelled {
+  background-color: #EF4444;
+  color: #fff;
+}

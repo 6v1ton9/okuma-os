@@ -1,0 +1,74 @@
+# =============================================================================
+# OKUMA OS - .gitignore
+# =============================================================================
+
+# --- Environment files (CONTAIN SECRETS! NEVER COMMIT) ---
+.env
+.env.local
+.env.*.local
+*.env
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+*.egg
+dist/
+build/
+develop-eggs/
+downloads/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Node.js / Frontend ---
+node_modules/
+.next/
+.nuxt/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# --- Docker ---
+docker-compose.override.yml
+
+# --- Freebuff ---
+.freebuff/
+
+# --- Alembic / Migrations (keep only the version dirs) ---
+# Note: keep alembic/versions/* but not the .pyc cache
+
+# --- Logs ---
+*.log
+logs/
