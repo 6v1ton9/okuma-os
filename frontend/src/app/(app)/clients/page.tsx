@@ -6,6 +6,8 @@ import { api } from "@/core/services/api"
 import { DataTable, type Column } from "@/shared/components/DataTable"
 import { StatusBadge } from "@/shared/components/StatusBadge"
 import { SearchInput } from "@/shared/components/SearchInput"
+import { useFloatingForm } from "@/shared/components/FloatingFormManager"
+import { ClientForm } from "@/shared/components/forms/ClientForm"
 import { Pagination } from "@/shared/components/Pagination"
 import { Button } from "@/components/ui/button"
 import { formatCNPJ, formatPhone } from "@/lib/utils"
@@ -62,6 +64,8 @@ export default function ClientsPage() {
   const [sortBy, setSortBy] = useState("razao_social")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
 
+  const { openForm } = useFloatingForm()
+
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
@@ -100,7 +104,12 @@ export default function ClientsPage() {
         <div className="w-72">
           <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1) }} />
         </div>
-        <Button className="rounded-none bg-blue-600 text-white hover:bg-blue-700">
+        <Button
+          onClick={() =>
+            openForm("client-form", "Novo Cliente", <ClientForm onSuccess={fetchData} />)
+          }
+          className="rounded-none bg-blue-600 text-white hover:bg-blue-700"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Novo Cliente
         </Button>

@@ -22,6 +22,8 @@ import {
 import { api } from "@/core/services/api"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useFloatingForm } from "@/shared/components/FloatingFormManager"
+import { CalendarEventForm } from "@/shared/components/forms/CalendarEventForm"
 
 interface Technician {
   id: number
@@ -78,6 +80,7 @@ export default function CalendarPage() {
   )
   const [data, setData] = useState<SpreadsheetData | null>(null)
   const [loading, setLoading] = useState(true)
+  const { openForm } = useFloatingForm()
 
   const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 })
 
@@ -141,7 +144,12 @@ export default function CalendarPage() {
             Hoje
           </Button>
         </div>
-        <Button className="rounded-none bg-blue-600 text-white hover:bg-blue-700">
+        <Button
+          onClick={() =>
+            openForm("calendar-event-form", "Novo Evento", <CalendarEventForm onSuccess={fetchData} />)
+          }
+          className="rounded-none bg-blue-600 text-white hover:bg-blue-700"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Novo Evento
         </Button>

@@ -6,6 +6,8 @@ import { api } from "@/core/services/api"
 import { DataTable, type Column } from "@/shared/components/DataTable"
 import { StatusBadge } from "@/shared/components/StatusBadge"
 import { SearchInput } from "@/shared/components/SearchInput"
+import { useFloatingForm } from "@/shared/components/FloatingFormManager"
+import { TechnicianForm } from "@/shared/components/forms/TechnicianForm"
 import { Pagination } from "@/shared/components/Pagination"
 import { Button } from "@/components/ui/button"
 import { formatCPF, formatPhone } from "@/lib/utils"
@@ -59,6 +61,8 @@ export default function TechniciansPage() {
   const [sortBy, setSortBy] = useState("name")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
 
+  const { openForm } = useFloatingForm()
+
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
@@ -96,7 +100,12 @@ export default function TechniciansPage() {
         <div className="w-72">
           <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1) }} />
         </div>
-        <Button className="rounded-none bg-blue-600 text-white hover:bg-blue-700">
+        <Button
+          onClick={() =>
+            openForm("technician-form", "Novo Técnico", <TechnicianForm onSuccess={fetchData} />)
+          }
+          className="rounded-none bg-blue-600 text-white hover:bg-blue-700"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Novo Técnico
         </Button>

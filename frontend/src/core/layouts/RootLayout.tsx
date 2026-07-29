@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "@/core/hooks/useTheme"
 import { useState, useMemo } from "react"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { FloatingFormProvider } from "@/shared/components/FloatingFormManager"
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -44,15 +45,17 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <TooltipProvider>
-          <div className="flex h-screen bg-white dark:bg-neutral-950">
-            <Sidebar />
-            <div className="flex flex-1 flex-col overflow-hidden">
-              <Navbar title={pageTitle} />
-              <main className="flex-1 overflow-y-auto bg-neutral-50 p-6 dark:bg-neutral-900">
-                {children}
-              </main>
+          <FloatingFormProvider>
+            <div className="flex h-screen bg-white dark:bg-neutral-950">
+              <Sidebar />
+              <div className="flex flex-1 flex-col overflow-hidden">
+                <Navbar title={pageTitle} />
+                <main className="flex-1 overflow-y-auto bg-neutral-50 p-6 dark:bg-neutral-900">
+                  {children}
+                </main>
+              </div>
             </div>
-          </div>
+          </FloatingFormProvider>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
