@@ -3,8 +3,6 @@
 # Development and production orchestration
 # =============================================================================
 
-version: "3.9"
-
 services:
   # PostgreSQL Database
   postgres:
@@ -84,3 +82,4 @@ services:
 
 volumes:
   postgres_data:
+  mongo_data:
