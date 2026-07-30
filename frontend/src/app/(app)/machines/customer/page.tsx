@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Plus, Loader2 } from "lucide-react"
+import { Plus } from "lucide-react"
 import { api } from "@/core/services/api"
 import { DataTable, type Column } from "@/shared/components/DataTable"
 import { StatusBadge } from "@/shared/components/StatusBadge"
@@ -11,6 +11,7 @@ import { useFloatingForm } from "@/shared/components/FloatingFormManager"
 import { CustomerMachineForm } from "@/shared/components/forms/CustomerMachineForm"
 import { Pagination } from "@/shared/components/Pagination"
 import { Button } from "@/components/ui/button"
+import { TableSkeleton } from "@/shared/components/Skeleton"
 
 interface CustomerMachine {
   id: number
@@ -110,9 +111,7 @@ export default function CustomerMachinesPage() {
 
       <div className="border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
         {isLoading && !data ? (
-          <div className="flex h-48 items-center justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
-          </div>
+          <TableSkeleton rows={5} cols={7} />
         ) : (
           <>
             <DataTable<CustomerMachine>

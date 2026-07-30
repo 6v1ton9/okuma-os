@@ -1,12 +1,13 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { Moon, Sun, Loader2 } from "lucide-react"
+import { Moon, Sun } from "lucide-react"
 import { useTheme } from "@/core/hooks/useTheme"
 import { api } from "@/core/services/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/shared/components/Skeleton"
 
 interface EventStatusConfig {
   statuses: {
@@ -65,8 +66,16 @@ export default function SettingsPage() {
         </h2>
         <div className="border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-950">
           {isLoading ? (
-            <div className="flex h-32 items-center justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between border-b border-neutral-100 pb-3 dark:border-neutral-800">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-6 w-6" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                  <Skeleton className="h-8 w-24" />
+                </div>
+              ))}
             </div>
           ) : (
             <div className="space-y-3">

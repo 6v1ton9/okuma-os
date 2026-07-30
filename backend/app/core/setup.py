@@ -11,8 +11,10 @@ from app.core.security import hash_password
 def ensure_admin_user():
     """Create default super admin user if it doesn't exist.
     
-    Uses Python's bcrypt to generate a proper password hash,
-    avoiding the issue of pre-computed hashes in SQL seeds.
+    Features:
+    - Generates proper bcrypt hash via Python (not pre-computed SQL)
+    - Sets must_change_password=True so admin is forced to change on first login
+    - Logs credentials to console for initial access
     """
     db: Session = SessionLocal()
     try:
@@ -24,11 +26,15 @@ def ensure_admin_user():
             email="admin@okuma.com.br",
             name="Administrador",
             hashed_password=hash_password("admin123"),
-            role="super_admin",  # Primeiro usuário é super_admin
+            role="super_admin",
+            must_change_password=True,  # 🔥 Força troca de senha no primeiro login!
         )
         db.add(admin)
         db.commit()
-        print("[OKUMA] Super admin user created (admin@okuma.com.br / admin123)")
+        print("[OKUMA] Super admin user created")
+        print("[OKUMA]   Email: admin@okuma.com.br")
+        print("[OKUMA]   Senha: admin123")
+        print("[OKUMA]   ⚠️  Altere a senha no primeiro login!")
     finally:
         db.close()
 

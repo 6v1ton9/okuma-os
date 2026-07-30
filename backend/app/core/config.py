@@ -19,12 +19,15 @@ class Settings(BaseSettings):
     DATABASE_POOL_SIZE: int = 10
     DATABASE_MAX_OVERFLOW: int = 20
 
-    # Auth - Supabase
-    SUPABASE_URL: Optional[str] = None
-    SUPABASE_KEY: Optional[str] = None
+    # Auth - JWT
     JWT_SECRET: str = "okuma-os-jwt-secret-change-in-production"
     JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRATION_MINUTES: int = 0  # 0 = sem expiração (token vitalício)
+    JWT_EXPIRATION_MINUTES: int = 480  # 8 horas — token expira após esse período
+    JWT_REFRESH_EXPIRATION_DAYS: int = 7  # Refresh token válido por 7 dias
+
+    # Rate Limiting
+    LOGIN_RATE_LIMIT: int = 5  # Máximo de tentativas de login
+    LOGIN_RATE_WINDOW_MINUTES: int = 15  # Janela de tempo em minutos
 
     # MongoDB
     MONGODB_URL: str = "mongodb://localhost:27017"

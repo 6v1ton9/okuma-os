@@ -1,6 +1,5 @@
 """OKUMA OS - Main Application
-FastAPI entry point with automatic module router registration.
-"""
+FastAPI entry point with automatic module router registration."""
 
 import os
 import sys
@@ -9,7 +8,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
 
 # Ensure the backend directory is in the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -18,55 +16,17 @@ from app.core.config import settings, CORS_ORIGINS_LIST
 
 
 # ---------------------------------------------------------------------------
-# Auto-discovery of module routes
-# ---------------------------------------------------------------------------
-def _register_core_modules(app: FastAPI):
-    """Register core modules that aren't auto-discovered."""
-    from app.core.auth_module import router as auth_router, admin_router
-    app.include_router(auth_router)
-    app.include_router(admin_router)
-    print(f"[OKUMA] Core module registered: auth")
-    print(f"[OKUMA] Core module registered: admin")
-
-
-def _discover_module_routes():
-    """Discover and import all module API routes automatically.
-
-    Each module should expose its router via app/modules/<module>/api/routes.py
-    as a 'router' attribute.
-    """
-    import importlib
-    import pkgutil
-
-    routes = []
-    modules_path = os.path.join(os.path.dirname(__file__), "modules")
-
-    if not os.path.isdir(modules_path):
-        return routes
-
-    for entry in os.listdir(modules_path):
-        module_dir = os.path.join(modules_path, entry)
-        if os.path.isdir(module_dir) and not entry.startswith("_"):
-            api_routes_path = os.path.join(module_dir, "api", "routes.py")
-            if os.path.isfile(api_routes_path):
-                try:
-                    module_name = f"app.modules.{entry}.api.routes"
-                    mod = importlib.import_module(module_name)
-                    if hasattr(mod, "router"):
-                        routes.append((entry, mod.router))
-                except ImportError as exc:
-                    print(f"[OKUMA] Warning: Could not load module '{entry}': {exc}")
-
-    return routes
-
-
-# ---------------------------------------------------------------------------
-# Lifespan handler (replaces deprecated on_event)
+# Lifespan handler — ONLY startup/shutdown tasks (defined BEFORE app)
 # ---------------------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application startup and shutdown events."""
-    # Startup
+    """Application startup and shutdown events.
+    
+    Route registration happens at module level below, not here.
+    This lifespan only handles startup tasks (DB, setup, connections).
+    With workers > 1, each worker runs its own lifespan, but routes
+    are already registered at import time — no duplicates or conflicts.
+    """
     print(f"[OKUMA] Starting {settings.APP_NAME} v{settings.APP_VERSION}")
 
     # Auto-create all PostgreSQL tables (fallback caso init.sql não tenha rodado)
@@ -98,16 +58,7 @@ async def lifespan(app: FastAPI):
         print(f"[OKUMA] MongoDB connection error: {exc}")
         print(f"[OKUMA] MongoDB not available (graceful: calendar metadata features will be limited)")
 
-    # Register core modules first
-    _register_core_modules(app)
-
-    # Register auto-discovered module routers
-    modules = _discover_module_routes()
-    for module_name, router in modules:
-        app.include_router(router)
-        print(f"[OKUMA] Module registered: {module_name}")
-
-    print(f"[OKUMA] Core + {len(modules)} modules loaded successfully")
+    print(f"[OKUMA] All systems ready")
     yield
     # Shutdown
     from app.core.mongodb import MongoDBManager
@@ -116,7 +67,7 @@ async def lifespan(app: FastAPI):
 
 
 # ---------------------------------------------------------------------------
-# Application Factory
+# Application Factory — routers registered at MODULE LEVEL
 # ---------------------------------------------------------------------------
 app = FastAPI(
     title=settings.APP_NAME,
@@ -127,8 +78,9 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+
 # ---------------------------------------------------------------------------
-# Middleware
+# Middleware (applied before routes)
 # ---------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
@@ -140,6 +92,52 @@ app.add_middleware(
 
 # Compressão GZip para respostas JSON (reduz tráfego em ~70%)
 app.add_middleware(GZipMiddleware, minimum_size=500)
+
+
+# ---------------------------------------------------------------------------
+# Auto-register all routers at MODULE LEVEL (not inside lifespan!)
+# This guarantees routes are registered once during import, not once per worker
+# ---------------------------------------------------------------------------
+def _register_core_modules():
+    """Register core auth/admin routers at module level."""
+    from app.core.auth_module import router as auth_router, admin_router
+    app.include_router(auth_router)
+    app.include_router(admin_router)
+
+
+def _discover_module_routes():
+    """Discover all module API routes automatically."""
+    import importlib
+
+    routes = []
+    modules_path = os.path.join(os.path.dirname(__file__), "modules")
+
+    if not os.path.isdir(modules_path):
+        return routes
+
+    for entry in os.listdir(modules_path):
+        module_dir = os.path.join(modules_path, entry)
+        if os.path.isdir(module_dir) and not entry.startswith("_"):
+            api_routes_path = os.path.join(module_dir, "api", "routes.py")
+            if os.path.isfile(api_routes_path):
+                try:
+                    module_name = f"app.modules.{entry}.api.routes"
+                    mod = importlib.import_module(module_name)
+                    if hasattr(mod, "router"):
+                        routes.append((entry, mod.router))
+                except ImportError as exc:
+                    print(f"[OKUMA] Warning: Could not load module '{entry}': {exc}")
+
+    return routes
+
+
+# Register all routes now (at import time, once only)
+_register_core_modules()
+registered_modules = _discover_module_routes()
+for module_name, router in registered_modules:
+    app.include_router(router)
+    print(f"[OKUMA] Module registered: {module_name}")
+print(f"[OKUMA] Core + {len(registered_modules)} modules loaded successfully")
 
 
 # ---------------------------------------------------------------------------
@@ -173,5 +171,5 @@ if __name__ == "__main__":
         host=settings.HOST,
         port=settings.PORT,
         reload=settings.DEBUG,
-        workers=2,  # Usa 2 workers para aproveitar múltiplos cores na t2.medium
+        workers=2,
     )

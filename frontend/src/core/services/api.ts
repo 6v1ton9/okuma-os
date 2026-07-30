@@ -10,6 +10,53 @@ export class ApiError extends Error {
   }
 }
 
+let _isRefreshing = false
+let _refreshPromise: Promise<boolean> | null = null
+
+/**
+ * Tenta renovar o access token usando o refresh token armazenado.
+ * Evita múltiplas requisições simultâneas de refresh.
+ */
+async function tryRefreshToken(): Promise<boolean> {
+  if (_isRefreshing && _refreshPromise) {
+    return _refreshPromise
+  }
+
+  const refreshToken = localStorage.getItem("okuma_refresh_token")
+  if (!refreshToken) return false
+
+  _isRefreshing = true
+  _refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/v1/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      })
+
+      if (!response.ok) {
+        // Refresh falhou — limpar tokens
+        localStorage.removeItem("okuma_token")
+        localStorage.removeItem("okuma_refresh_token")
+        return false
+      }
+
+      const data = await response.json()
+      localStorage.setItem("okuma_token", data.access_token)
+      return true
+    } catch {
+      localStorage.removeItem("okuma_token")
+      localStorage.removeItem("okuma_refresh_token")
+      return false
+    } finally {
+      _isRefreshing = false
+      _refreshPromise = null
+    }
+  })()
+
+  return _refreshPromise
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -34,6 +81,41 @@ async function request<T>(
     })
 
     clearTimeout(timeoutId)
+
+    // 🔥 Se receber 401, tenta renovar o token automaticamente
+    if (response.status === 401 && localStorage.getItem("okuma_refresh_token")) {
+      const refreshed = await tryRefreshToken()
+      if (refreshed) {
+        // Retry original request with new token
+        const newToken = localStorage.getItem("okuma_token")
+        const retryResponse = await fetch(`${API_URL}${endpoint}`, {
+          ...options,
+          headers: {
+            "Content-Type": "application/json",
+            ...(newToken ? { Authorization: `Bearer ${newToken}` } : {}),
+            ...options.headers,
+          },
+          signal: controller.signal,
+        })
+
+        if (!retryResponse.ok) {
+          const errorBody = await retryResponse.json().catch(() => ({}))
+          throw new ApiError(
+            retryResponse.status,
+            errorBody.detail || `Erro ${retryResponse.status}: ${retryResponse.statusText}`
+          )
+        }
+
+        if (retryResponse.status === 204) return null as T
+        return retryResponse.json()
+      } else {
+        // Refresh falhou — redirecionar para login
+        if (typeof window !== "undefined") {
+          window.location.href = "/login"
+        }
+        throw new ApiError(401, "Sessão expirada. Faça login novamente.")
+      }
+    }
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => ({}))

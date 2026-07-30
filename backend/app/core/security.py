@@ -46,28 +46,34 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Create a JWT access token.
+    """Create a JWT access token with expiration.
 
     Args:
         data: Claims to embed in the token (must include 'sub').
         expires_delta: Optional custom expiration time.
 
     Returns:
-        str: Encoded JWT token.
-
-    Se JWT_EXPIRATION_MINUTES for 0 ou None, o token não terá expiração (vitalício).
+        str: Encoded JWT token with exp claim.
     """
     to_encode = data.copy()
-    
-    # Só adiciona exp se houver um tempo de expiração configurado
-    expiry_minutes = expires_delta or settings.JWT_EXPIRATION_MINUTES
-    if expiry_minutes:
-        if isinstance(expiry_minutes, timedelta):
-            expire = datetime.now(timezone.utc) + expiry_minutes
-        else:
-            expire = datetime.now(timezone.utc) + timedelta(minutes=expiry_minutes)
-        to_encode.update({"exp": expire})
-    
+    expiry = expires_delta or timedelta(minutes=settings.JWT_EXPIRATION_MINUTES)
+    expire = datetime.now(timezone.utc) + expiry
+    to_encode.update({"exp": expire, "type": "access"})
+    return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+
+def create_refresh_token(data: dict) -> str:
+    """Create a JWT refresh token with longer expiration.
+
+    Args:
+        data: Claims to embed (must include 'sub').
+
+    Returns:
+        str: Encoded JWT refresh token.
+    """
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_EXPIRATION_DAYS)
+    to_encode.update({"exp": expire, "type": "refresh"})
     return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
@@ -111,7 +117,15 @@ def get_current_user(
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token inválido",
+            detail="Token inválido ou expirado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Verificar se é um access token (não refresh)
+    if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Tipo de token inválido",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

@@ -15,7 +15,6 @@ import { ptBR } from "date-fns/locale"
 import {
   ChevronLeft,
   ChevronRight,
-  Loader2,
   Plus,
   Info,
 } from "lucide-react"
@@ -171,8 +170,23 @@ export default function CalendarPage() {
       {/* Spreadsheet */}
       <div className="overflow-auto border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
         {isLoading ? (
-          <div className="flex h-48 items-center justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
+          <div className="p-4 space-y-2">
+            {/* Day headers skeleton */}
+            <div className="flex gap-2 mb-4">
+              <div className="h-12 w-48 animate-pulse bg-neutral-200 dark:bg-neutral-800" />
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={`day-${i}`} className="h-12 flex-1 animate-pulse bg-neutral-200 dark:bg-neutral-800" />
+              ))}
+            </div>
+            {/* Technician rows skeleton */}
+            {Array.from({ length: 4 }).map((_, r) => (
+              <div key={`tr-${r}`} className="flex gap-2 mb-2">
+                <div className="h-20 w-48 animate-pulse bg-neutral-200 dark:bg-neutral-800" />
+                {Array.from({ length: 7 }).map((_, c) => (
+                  <div key={`tc-${r}-${c}`} className="h-20 flex-1 animate-pulse bg-neutral-200/50 dark:bg-neutral-800/50" />
+                ))}
+              </div>
+            ))}
           </div>
         ) : (
           <table className="w-full border-collapse text-sm">

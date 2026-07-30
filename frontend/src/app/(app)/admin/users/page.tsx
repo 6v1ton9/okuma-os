@@ -7,6 +7,8 @@ import { api } from "@/core/services/api"
 import { Button } from "@/components/ui/button"
 import { DataTable, type Column } from "@/shared/components/DataTable"
 import { useFloatingForm } from "@/shared/components/FloatingFormManager"
+import { TableSkeleton } from "@/shared/components/Skeleton"
+import { Skeleton } from "@/shared/components/Skeleton"
 
 interface AppUser {
   id: number
@@ -179,9 +181,7 @@ export default function AdminUsersPage() {
       {/* Table */}
       <div className="border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
         {isLoading ? (
-          <div className="flex h-48 items-center justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
-          </div>
+          <TableSkeleton rows={4} cols={4} />
         ) : (
           <DataTable<AppUser>
             columns={columns}
