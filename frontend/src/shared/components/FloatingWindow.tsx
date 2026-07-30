@@ -7,6 +7,7 @@ interface FloatingWindowProps {
   id: string
   title: string
   onClose: () => void
+  onMinimize?: () => void
   children: React.ReactNode
   initialPosition?: { x: number; y: number }
   width?: number
@@ -17,12 +18,12 @@ export function FloatingWindow({
   id,
   title,
   onClose,
+  onMinimize,
   children,
   initialPosition = { x: 100, y: 80 },
   width = 640,
   height = 480,
 }: FloatingWindowProps) {
-  const [minimized, setMinimized] = useState(false)
   const [position, setPosition] = useState(initialPosition)
   const [size, setSize] = useState({ width, height })
   const [isDragging, setIsDragging] = useState(false)
@@ -94,8 +95,6 @@ export function FloatingWindow({
     }
   }, [isDragging, isResizing, dragOffset, resizeStart, resizeStartSize])
 
-  if (minimized) return null
-
   return (
     <div
       ref={windowRef}
@@ -124,7 +123,7 @@ export function FloatingWindow({
           <button
             onClick={(e) => {
               e.stopPropagation()
-              setMinimized(true)
+              onMinimize?.()
             }}
             className="h-6 w-6 flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-200 dark:hover:bg-neutral-700 dark:hover:text-neutral-200 transition-colors"
             title="Minimizar"

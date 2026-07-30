@@ -1,28 +1,50 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronLeft, ChevronRight, Building2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, Building2, PanelRightClose, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { NAV_MODULES, type NavModule } from "@/core/constants/modules"
+import { useFloatingForm } from "@/shared/components/FloatingFormManager"
 
 const categoryLabels: Record<string, string> = {
   dashboard: "",
   cadastros: "CADASTROS",
   operacional: "OPERACIONAL",
   configuracoes: "CONFIGURAÇÕES",
+  admin: "ADMINISTRADOR",
 }
 
-const categoryOrder = ["dashboard", "cadastros", "operacional", "configuracoes"]
+const categoryOrder = ["dashboard", "cadastros", "operacional", "configuracoes", "admin"]
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const pathname = usePathname()
+  const { minimizedForms, restoreForm, closeForm } = useFloatingForm()
+
+  useEffect(() => {
+    // Get user role from JWT payload stored in localStorage
+    try {
+      const token = localStorage.getItem("okuma_token")
+      if (token) {
+        const payload = JSON.parse(atob(token.split(".")[1]))
+        setUserRole(payload.role || "admin")
+      }
+    } catch {
+      setUserRole(null)
+    }
+  }, [])
+
+  const filteredModules = NAV_MODULES.filter((mod) => {
+    if (mod.adminOnly && userRole !== "super_admin") return false
+    return true
+  })
 
   const groupedModules = categoryOrder.reduce(
     (acc, cat) => {
-      const modules = NAV_MODULES.filter((m) => m.category === cat)
+      const modules = filteredModules.filter((m) => m.category === cat)
       if (modules.length > 0) acc[cat] = modules
       return acc
     },
@@ -91,6 +113,41 @@ export function Sidebar() {
             </div>
           </div>
         ))}
+
+        {/* Minimized Forms Section */}
+        {minimizedForms.length > 0 && !collapsed && (
+          <div className="mb-6">
+            <div className="mb-2 px-2">
+              <span className="text-[10px] font-semibold tracking-widest text-neutral-400 dark:text-neutral-500">
+                JANELAS MINIMIZADAS
+              </span>
+            </div>
+            <div className="space-y-1">
+              {minimizedForms.map((form) => (
+                <div
+                  key={form.id}
+                  className="group flex items-center gap-2 rounded-none px-2 py-2 text-sm transition-colors bg-blue-50/50 dark:bg-blue-950/30 border-l-2 border-blue-500"
+                >
+                  <button
+                    onClick={() => restoreForm(form.id)}
+                    className="flex flex-1 items-center gap-2 text-left text-neutral-700 hover:text-blue-700 dark:text-neutral-300 dark:hover:text-blue-400 transition-colors"
+                    title="Restaurar janela"
+                  >
+                    <PanelRightClose className="h-4 w-4 shrink-0 text-blue-500" />
+                    <span className="truncate">{form.title}</span>
+                  </button>
+                  <button
+                    onClick={() => closeForm(form.id)}
+                    className="shrink-0 text-neutral-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                    title="Fechar janela"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Collapse Toggle */}

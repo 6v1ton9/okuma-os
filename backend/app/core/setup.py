@@ -1,5 +1,5 @@
 """OKUMA OS - Database Setup
-Creates default admin user on first run with proper password hashing."""
+Creates default super admin user on first run with proper password hashing."""
 
 from sqlalchemy.orm import Session
 
@@ -9,7 +9,7 @@ from app.core.security import hash_password
 
 
 def ensure_admin_user():
-    """Create default admin user if it doesn't exist.
+    """Create default super admin user if it doesn't exist.
     
     Uses Python's bcrypt to generate a proper password hash,
     avoiding the issue of pre-computed hashes in SQL seeds.
@@ -24,11 +24,11 @@ def ensure_admin_user():
             email="admin@okuma.com.br",
             name="Administrador",
             hashed_password=hash_password("admin123"),
-            role="admin",
+            role="super_admin",  # Primeiro usuário é super_admin
         )
         db.add(admin)
         db.commit()
-        print("[OKUMA] Admin user created (admin@okuma.com.br / admin123)")
+        print("[OKUMA] Super admin user created (admin@okuma.com.br / admin123)")
     finally:
         db.close()
 

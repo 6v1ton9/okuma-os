@@ -71,6 +71,27 @@ class UserResponse(BaseModel):
     active: bool
 
 
+class AdminCreateUserRequest(BaseModel):
+    """Admin creates a new user."""
+    email: str
+    name: str
+    password: str
+
+
+# =============================================================================
+# Helper: check super_admin role
+# =============================================================================
+
+def require_super_admin(current_user: dict = Depends(get_current_user)):
+    """Dependency that ensures the user has super_admin role."""
+    if current_user.get("role") != "super_admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas Super Administradores podem acessar este recurso",
+        )
+    return current_user
+
+
 # =============================================================================
 # API Router
 # =============================================================================
@@ -99,7 +120,7 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
         )
 
     access_token = create_access_token(
-        data={"sub": user.email, "id": user.id}
+        data={"sub": user.email, "id": user.id, "role": user.role}
     )
 
     return LoginResponse(
@@ -134,7 +155,7 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     db.refresh(user)
 
     access_token = create_access_token(
-        data={"sub": user.email, "id": user.id}
+        data={"sub": user.email, "id": user.id, "role": user.role}
     )
 
     return LoginResponse(
@@ -201,3 +222,67 @@ def recover_password(data: PasswordRecoveryRequest, db: Session = Depends(get_db
     return {
         "message": "Se o email estiver cadastrado, você receberá instruções de recuperação"
     }
+
+
+# =============================================================================
+# Super Admin - User Management Endpoints
+# =============================================================================
+
+admin_router = APIRouter(
+    prefix="/api/v1/admin",
+    tags=["Administração"],
+    dependencies=[Depends(require_super_admin)],
+)
+
+
+@admin_router.get("/users", response_model=dict)
+def list_users(
+    db: Session = Depends(get_db),
+):
+    """List all system users (super admin only)."""
+    users = db.query(User).order_by(User.name).all()
+    return {
+        "items": [
+            {
+                "id": u.id,
+                "email": u.email,
+                "name": u.name,
+                "role": u.role,
+                "active": u.active,
+            }
+            for u in users
+        ],
+        "total": len(users),
+    }
+
+
+@admin_router.post("/users", response_model=UserResponse, status_code=201)
+def create_user(
+    data: AdminCreateUserRequest,
+    db: Session = Depends(get_db),
+):
+    """Create a new admin user (super admin only)."""
+    existing = db.query(User).filter(User.email == data.email).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email já cadastrado",
+        )
+
+    user = User(
+        email=data.email,
+        name=data.name,
+        hashed_password=hash_password(data.password),
+        role="admin",
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        name=user.name,
+        role=user.role,
+        active=user.active,
+    )

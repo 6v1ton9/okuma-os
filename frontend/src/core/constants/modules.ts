@@ -5,6 +5,7 @@ import {
   HardHat,
   Calendar,
   Settings,
+  Shield,
   type LucideIcon,
 } from "lucide-react"
 
@@ -12,8 +13,9 @@ export interface NavModule {
   name: string
   path: string
   icon: LucideIcon
-  category: "dashboard" | "cadastros" | "operacional" | "configuracoes"
+  category: "dashboard" | "cadastros" | "operacional" | "configuracoes" | "admin"
   order: number
+  adminOnly?: boolean
 }
 
 export const NAV_MODULES: NavModule[] = [
@@ -65,5 +67,13 @@ export const NAV_MODULES: NavModule[] = [
     icon: Settings,
     category: "configuracoes",
     order: 1,
+  },
+  {
+    name: "Administrador",
+    path: "/admin/users",
+    icon: Shield,
+    category: "admin",
+    order: 1,
+    adminOnly: true,
   },
 ]

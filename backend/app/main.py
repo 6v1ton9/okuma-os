@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 # Ensure the backend directory is in the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.core.config import settings
+from app.core.config import settings, CORS_ORIGINS_LIST
 
 
 # ---------------------------------------------------------------------------
@@ -22,9 +22,11 @@ from app.core.config import settings
 # ---------------------------------------------------------------------------
 def _register_core_modules(app: FastAPI):
     """Register core modules that aren't auto-discovered."""
-    from app.core.auth_module import router as auth_router
+    from app.core.auth_module import router as auth_router, admin_router
     app.include_router(auth_router)
+    app.include_router(admin_router)
     print(f"[OKUMA] Core module registered: auth")
+    print(f"[OKUMA] Core module registered: admin")
 
 
 def _discover_module_routes():
@@ -130,7 +132,7 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=CORS_ORIGINS_LIST,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

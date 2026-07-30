@@ -14,11 +14,17 @@ export interface OpenForm {
   component: ReactNode
 }
 
+export interface MinimizedFormInfo {
+  id: string
+  title: string
+}
+
 interface FloatingFormContextType {
   openForm: (id: string, title: string, component: ReactNode) => void
   closeForm: (id: string) => void
   minimizeForm: (id: string) => void
   restoreForm: (id: string) => void
+  minimizedForms: MinimizedFormInfo[]
 }
 
 // =============================================================================
@@ -30,6 +36,7 @@ const FloatingFormContext = createContext<FloatingFormContextType>({
   closeForm: () => {},
   minimizeForm: () => {},
   restoreForm: () => {},
+  minimizedForms: [],
 })
 
 export function useFloatingForm() {
@@ -83,7 +90,7 @@ export function FloatingFormProvider({ children }: { children: ReactNode }) {
 
   return (
     <FloatingFormContext.Provider
-      value={{ openForm, closeForm, minimizeForm, restoreForm }}
+      value={{ openForm, closeForm, minimizeForm, restoreForm, minimizedForms }}
     >
       {children}
 
@@ -94,6 +101,7 @@ export function FloatingFormProvider({ children }: { children: ReactNode }) {
           id={form.id}
           title={form.title}
           onClose={() => closeForm(form.id)}
+          onMinimize={() => minimizeForm(form.id)}
           initialPosition={{
             x: 80 + activeForms.indexOf(form) * 30,
             y: 60 + activeForms.indexOf(form) * 30,

@@ -2,7 +2,7 @@
 Application settings loaded from environment variables."""
 
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import Optional, List
 
 
 class Settings(BaseSettings):
@@ -30,8 +30,8 @@ class Settings(BaseSettings):
     MONGODB_URL: str = "mongodb://localhost:27017"
     MONGODB_DB_NAME: str = "okuma_os"
 
-    # CORS
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    # CORS - parsed from env as JSON string, e.g. CORS_ORIGINS='["http://localhost:3000"]'
+    CORS_ORIGINS: str = '["http://localhost:3000","http://127.0.0.1:3000"]'
 
     # Server
     HOST: str = "0.0.0.0"
@@ -44,3 +44,7 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Parse CORS_ORIGINS JSON string into list
+import json
+CORS_ORIGINS_LIST: List[str] = json.loads(settings.CORS_ORIGINS)
