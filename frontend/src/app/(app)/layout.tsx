@@ -12,7 +12,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = localStorage.getItem("okuma_token")
     if (!token) {
-      router.replace("/auth/login")
+      router.replace("/login")
     } else {
       setChecked(true)
     }

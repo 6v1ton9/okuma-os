@@ -7,6 +7,8 @@ import { ChevronLeft, ChevronRight, Building2, PanelRightClose, X } from "lucide
 import { cn } from "@/lib/utils"
 import { NAV_MODULES, type NavModule } from "@/core/constants/modules"
 import { useFloatingForm } from "@/shared/components/FloatingFormManager"
+import { useQueryClient } from "@tanstack/react-query"
+import { api } from "@/core/services/api"
 
 const categoryLabels: Record<string, string> = {
   dashboard: "",
@@ -18,11 +20,38 @@ const categoryLabels: Record<string, string> = {
 
 const categoryOrder = ["dashboard", "cadastros", "operacional", "configuracoes", "admin"]
 
+// 🔥 Mapa de pre-fetch: quando o mouse passar por cima de um link,
+// já começamos a carregar os dados daquela página
+const PREFETCH_QUERIES: Record<string, { queryKey: any[]; url: string; params?: Record<string,string> }[]> = {
+  "/dashboard": [{ queryKey: ["dashboard-summary"], url: "/api/v1/dashboard/summary" }],
+  "/clients": [{ queryKey: ["clients",{page:1,sortBy:"razao_social",sortOrder:"asc"}], url: "/api/v1/clients", params: { page: "1", page_size: "20", sort_by: "razao_social", sort_order: "asc" } }],
+  "/machines/models": [{ queryKey: ["machine-models",{page:1,sortBy:"model",sortOrder:"asc"}], url: "/api/v1/machines/models", params: { page: "1", page_size: "20", sort_by: "model", sort_order: "asc" } }],
+  "/machines/customer": [{ queryKey: ["customer-machines",{page:1,sortBy:"numero_serie",sortOrder:"asc"}], url: "/api/v1/machines/customer", params: { page: "1", page_size: "20", sort_by: "numero_serie", sort_order: "asc" } }],
+  "/technicians": [{ queryKey: ["technicians",{page:1,sortBy:"name",sortOrder:"asc"}], url: "/api/v1/technicians", params: { page: "1", page_size: "20", sort_by: "name", sort_order: "asc" } }],
+  "/calendar": [{ queryKey: ["calendar-spreadsheet"], url: "/api/v1/calendar/spreadsheet", params: { start_date: new Date().toISOString().slice(0,10), end_date: new Date(Date.now()+7*86400000).toISOString().slice(0,10) } }],
+  "/settings": [{ queryKey: ["event-statuses"], url: "/api/v1/settings/event-statuses" }],
+  "/admin/users": [{ queryKey: ["admin-users"], url: "/api/v1/admin/users" }],
+}
+
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [userRole, setUserRole] = useState<string | null>(null)
   const pathname = usePathname()
   const { minimizedForms, restoreForm, closeForm } = useFloatingForm()
+  const queryClient = useQueryClient()
+
+  // 🔥 Pre-fetch data when hovering over a sidebar link
+  const handlePrefetch = (path: string) => {
+    const queries = PREFETCH_QUERIES[path]
+    if (!queries) return
+    for (const q of queries) {
+      queryClient.prefetchQuery({
+        queryKey: q.queryKey,
+        queryFn: () => api.get(q.url, q.params),
+        staleTime: 1000 * 60 * 5,
+      })
+    }
+  }
 
   useEffect(() => {
     // Get user role from JWT payload stored in localStorage
@@ -93,10 +122,11 @@ export function Sidebar() {
                 const Icon = mod.icon
                 const isActive = pathname.startsWith(mod.path)
 
-                return (
-                  <Link
+                return (                    <Link
                     key={mod.path}
                     href={mod.path}
+                    onMouseEnter={() => handlePrefetch(mod.path)}
+                    onTouchStart={() => handlePrefetch(mod.path)}
                     className={cn(
                       "flex items-center gap-3 rounded-none px-2 py-2 text-sm font-medium transition-colors",
                       isActive

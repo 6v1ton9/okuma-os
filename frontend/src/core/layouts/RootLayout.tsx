@@ -17,6 +17,7 @@ const pageTitles: Record<string, string> = {
   "/technicians": "Técnicos",
   "/calendar": "Agenda",
   "/settings": "Configurações",
+  "/admin/users": "Administrador",
 }
 
 export function RootLayout({ children }: { children: React.ReactNode }) {
@@ -25,7 +26,12 @@ export function RootLayout({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 1000 * 60,
+            // 🔥 5 minutos de cache (antes era 60s) — navegação instantânea ao voltar
+            staleTime: 1000 * 60 * 5,
+            // 🔥 Não refaz fetch ao focar a janela — evita requisições desnecessárias
+            refetchOnWindowFocus: false,
+            // 🔥 Mantém dados no cache por 10 minutos
+            gcTime: 1000 * 60 * 10,
             retry: 1,
           },
         },
