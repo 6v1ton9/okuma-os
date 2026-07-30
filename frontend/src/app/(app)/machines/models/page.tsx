@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useCallback, useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Plus, Loader2 } from "lucide-react"
 import { api } from "@/core/services/api"
 import { DataTable, type Column } from "@/shared/components/DataTable"
@@ -42,8 +43,7 @@ const columns: Column<MachineModel>[] = [
 ]
 
 export default function MachineModelsPage() {
-  const [data, setData] = useState<ModelsResponse | null>(null)
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [sortBy, setSortBy] = useState("model")
@@ -51,27 +51,21 @@ export default function MachineModelsPage() {
 
   const { openForm } = useFloatingForm()
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    try {
-      const result = await api.get<ModelsResponse>("/api/v1/machines/models", {
+  const { data, isLoading } = useQuery({
+    queryKey: ["machine-models", { page, search, sortBy, sortOrder }],
+    queryFn: () =>
+      api.get<ModelsResponse>("/api/v1/machines/models", {
         page: String(page),
         page_size: "20",
         ...(search && { search }),
         sort_by: sortBy,
         sort_order: sortOrder,
-      })
-      setData(result)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }, [page, search, sortBy, sortOrder])
+      }),
+  })
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  const onSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["machine-models"] })
+  }, [queryClient])
 
   const handleSort = (key: string) => {
     if (sortBy === key) {
@@ -90,7 +84,7 @@ export default function MachineModelsPage() {
         </div>
         <Button
           onClick={() =>
-            openForm("machine-model-form", "Novo Modelo", <MachineModelForm onSuccess={fetchData} />)
+            openForm("machine-model-form", "Novo Modelo", <MachineModelForm onSuccess={onSuccess} />)
           }
           className="rounded-none bg-blue-600 text-white hover:bg-blue-700"
         >
@@ -100,7 +94,7 @@ export default function MachineModelsPage() {
       </div>
 
       <div className="border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-        {loading && !data ? (
+        {isLoading && !data ? (
           <div className="flex h-48 items-center justify-center">
             <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
           </div>

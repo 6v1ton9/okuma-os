@@ -1,14 +1,15 @@
 """OKUMA OS - Technicians Module Models
-Technician registration with exams and training records."""
+Technician registration with exams and training records.
+"""
 
-from sqlalchemy import Column, Integer, String, Text, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Date, ForeignKey, Index
 from sqlalchemy.orm import relationship
 from app.core.models import BaseModel, ActivableMixin
 
 
 class Technician(BaseModel, ActivableMixin):
     """Technician registration.
-    
+
     Stores personal and professional information for service technicians.
     """
     __tablename__ = "technicians"
@@ -22,6 +23,11 @@ class Technician(BaseModel, ActivableMixin):
     email = Column(String(255), nullable=True)
     role = Column("cargo", String(100), nullable=True)
     status = Column(String(20), default="active", nullable=False)
+
+    __table_args__ = (
+        Index("idx_technician_active_status", "active", "status"),
+        Index("idx_technician_name_role", "name", "cargo"),
+    )
 
     # Relationships
     exams = relationship("Exam", back_populates="technician", cascade="all, delete-orphan")
@@ -44,6 +50,11 @@ class Exam(BaseModel):
     expiration_date = Column("validade", Date, nullable=True)
     notes = Column("observacao", Text, nullable=True)
 
+    __table_args__ = (
+        Index("idx_exam_technician_date", "technician_id", "date"),
+        Index("idx_exam_expiration", "validade"),
+    )
+
     # Relationship
     technician = relationship("Technician", back_populates="exams")
 
@@ -64,6 +75,11 @@ class Training(BaseModel):
     date = Column(Date, nullable=True)
     expiration_date = Column("validade", Date, nullable=True)
     notes = Column("observacao", Text, nullable=True)
+
+    __table_args__ = (
+        Index("idx_training_technician_date", "technician_id", "date"),
+        Index("idx_training_expiration", "validade"),
+    )
 
     # Relationship
     technician = relationship("Technician", back_populates="trainings")

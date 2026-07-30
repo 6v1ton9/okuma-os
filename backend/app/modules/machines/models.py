@@ -1,14 +1,15 @@
 """OKUMA OS - Machines Module Models
-Two entities: MachineModel (catalog) and CustomerMachine (client units)."""
+Two entities: MachineModel (catalog) and CustomerMachine (client units).
+"""
 
-from sqlalchemy import Column, Integer, String, Text, Float, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Float, Date, ForeignKey, Index
 from sqlalchemy.orm import relationship
 from app.core.models import BaseModel, ActivableMixin
 
 
 class MachineModel(BaseModel, ActivableMixin):
     """Machine model catalog entry.
-    
+
     Represents an official machine model from the manufacturer's catalog.
     Contains technical specifications and dimensions.
     """
@@ -27,6 +28,11 @@ class MachineModel(BaseModel, ActivableMixin):
     tech_specs = Column("especificacoes_tecnicas", Text, nullable=True)
     notes = Column("observacoes", Text, nullable=True)
 
+    __table_args__ = (
+        Index("idx_machine_model_active", "active"),
+        Index("idx_machine_model_name_line", "name", "line"),
+    )
+
     # Relationship: one model can have many customer machines
     customer_machines = relationship("CustomerMachine", back_populates="machine_model")
 
@@ -36,7 +42,7 @@ class MachineModel(BaseModel, ActivableMixin):
 
 class CustomerMachine(BaseModel, ActivableMixin):
     """A specific machine unit installed at a client site.
-    
+
     Links a client to a machine model with serial number and location info.
     """
     __tablename__ = "customer_machines"
@@ -52,6 +58,11 @@ class CustomerMachine(BaseModel, ActivableMixin):
     location = Column("localizacao", String(255), nullable=True)
     notes = Column("observacoes", Text, nullable=True)
     status = Column(String(20), default="active", nullable=False)
+
+    __table_args__ = (
+        Index("idx_customer_machine_active_status", "active", "status"),
+        Index("idx_customer_machine_client_status", "client_id", "status"),
+    )
 
     # Relationships
     client = relationship("Client")

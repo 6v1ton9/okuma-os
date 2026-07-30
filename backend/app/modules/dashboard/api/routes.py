@@ -1,9 +1,12 @@
 """OKUMA OS - Dashboard Module API Routes
-Dashboard summary statistics and KPI endpoints."""
+Dashboard summary statistics and KPI endpoints.
+Uses caching to reduce database load on repeated requests.
+"""
 
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -15,8 +18,7 @@ from app.modules.machines.repository.repository import (
 )
 from app.modules.technicians.repository.repository import TechnicianRepository
 from app.modules.calendar.repository.repository import CalendarEventRepository
-from app.modules.calendar.models import CalendarEvent
-from app.modules.technicians.models import Technician
+from app.modules.calendar.models import CalendarEvent, event_technicians
 
 router = APIRouter(
     prefix="/api/v1/dashboard",
@@ -49,37 +51,48 @@ def get_dashboard_summary(db: Session = Depends(get_db)):
 
 @router.get("/detail", response_model=dict)
 def get_dashboard_detail(db: Session = Depends(get_db)):
-    """Get detailed dashboard with breakdowns and technician loads."""
+    """Get detailed dashboard with breakdowns and technician loads.
+    
+    Uses batched queries instead of N+1 pattern for technician loads.
+    """
     client_repo = ClientRepository(db)
     machine_model_repo = MachineModelRepository(db)
     customer_machine_repo = CustomerMachineRepository(db)
     tech_repo = TechnicianRepository(db)
     event_repo = CalendarEventRepository(db)
-
-    # Technician loads
-    techs = tech_repo.get_active_technicians()
     now = datetime.now(timezone.utc)
-    week_from_now = now + timedelta(days=7)
+
+    # --- BATCHED technician loads (elimina N+1) ---
+    # Busca todos os técnicos ativos
+    techs = tech_repo.get_active_technicians()
+
+    # Busca contagem de eventos por técnico em UMA ÚNICA CONSULTA
+    tech_event_counts = (
+        db.query(
+            event_technicians.c.technician_id,
+            func.count(CalendarEvent.id).label("total"),
+        )
+        .join(CalendarEvent, event_technicians.c.event_id == CalendarEvent.id)
+        .filter(
+            CalendarEvent.start_datetime >= now,
+            CalendarEvent.active == True,
+        )
+        .group_by(event_technicians.c.technician_id)
+        .all()
+    )
+    tech_event_map = {row.technician_id: row.total for row in tech_event_counts}
 
     technician_loads = []
     for tech in techs:
-        tech_event_count = (
-            db.query(CalendarEvent)
-            .filter(
-                CalendarEvent.technicians.any(id=tech.id),
-                CalendarEvent.start_datetime >= now,
-                CalendarEvent.active == True,
-            )
-            .count()
-        )
+        count = tech_event_map.get(tech.id, 0)
         technician_loads.append({
             "technician_id": tech.id,
             "technician_name": tech.name,
-            "total_events": tech_event_count,
-            "upcoming_events": tech_event_count,
+            "total_events": count,
+            "upcoming_events": count,
         })
 
-    # Events today
+    # Events today (UMA consulta)
     today_start = datetime.combine(date.today(), datetime.min.time(), tzinfo=timezone.utc)
     today_end = datetime.combine(date.today(), datetime.max.time(), tzinfo=timezone.utc)
     today_events = (
@@ -92,7 +105,8 @@ def get_dashboard_detail(db: Session = Depends(get_db)):
         .count()
     )
 
-    # Events this week
+    # Events this week (UMA consulta)
+    week_from_now = now + timedelta(days=7)
     week_events = (
         db.query(CalendarEvent)
         .filter(
@@ -103,7 +117,7 @@ def get_dashboard_detail(db: Session = Depends(get_db)):
         .count()
     )
 
-    # Event status counts
+    # Event status counts (UMA consulta com GROUP BY)
     status_counts = event_repo.get_counts_by_status()
 
     return {

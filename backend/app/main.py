@@ -1,5 +1,6 @@
 """OKUMA OS - Main Application
-FastAPI entry point with automatic module router registration."""
+FastAPI entry point with automatic module router registration.
+"""
 
 import os
 import sys
@@ -170,4 +171,5 @@ if __name__ == "__main__":
         host=settings.HOST,
         port=settings.PORT,
         reload=settings.DEBUG,
+        workers=2,  # Usa 2 workers para aproveitar múltiplos cores na t2.medium
     )

@@ -1,13 +1,14 @@
 """OKUMA OS - Clients Module Models
-SQLAlchemy models for enterprise (client) registration."""
+SQLAlchemy models for enterprise (client) registration.
+"""
 
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, Integer, String, Text, Index
 from app.core.models import BaseModel, ActivableMixin
 
 
 class Client(BaseModel, ActivableMixin):
     """Enterprise client registration.
-    
+
     Stores complete company information including tax IDs and contact details.
     """
     __tablename__ = "clients"
@@ -26,6 +27,12 @@ class Client(BaseModel, ActivableMixin):
     zip_code = Column("cep", String(10), nullable=True)
     notes = Column("observacoes", Text, nullable=True)
     status = Column(String(20), default="active", nullable=False)
+
+    __table_args__ = (
+        Index("idx_clients_active_status", "active", "status"),
+        Index("idx_clients_city_state", "city", "state"),
+        Index("idx_clients_search", "razao_social", "nome_fantasia", "city"),
+    )
 
     def __repr__(self) -> str:
         return f"<Client(id={self.id}, company='{self.company_name}')>"

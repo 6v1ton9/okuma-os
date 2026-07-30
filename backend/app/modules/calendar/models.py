@@ -1,8 +1,9 @@
 """OKUMA OS - Calendar Module Models
-Event scheduling with technician assignments and status tracking."""
+Event scheduling with technician assignments and status tracking.
+"""
 
 from sqlalchemy import (
-    Column, Integer, String, Text, DateTime, ForeignKey, Table,
+    Column, Integer, String, Text, DateTime, ForeignKey, Table, Index,
 )
 from sqlalchemy.orm import relationship
 from app.core.models import BaseModel, ActivableMixin
@@ -19,7 +20,7 @@ event_technicians = Table(
 
 class CalendarEvent(BaseModel, ActivableMixin):
     """Scheduled event in the technician calendar/spreadsheet view.
-    
+
     Each event represents a service visit at a client site.
     """
     __tablename__ = "calendar_events"
@@ -38,6 +39,14 @@ class CalendarEvent(BaseModel, ActivableMixin):
     notes = Column("observacoes", Text, nullable=True)
     city = Column(String(100), nullable=True)
     metadata_id = Column(String(50), nullable=True, index=True)
+
+    __table_args__ = (
+        Index("idx_event_active_status", "active", "status"),
+        Index("idx_event_date_range", "data_inicio", "data_fim"),
+        Index("idx_event_active_dates", "active", "data_inicio", "data_fim"),
+        Index("idx_event_client_date", "client_id", "data_inicio"),
+        Index("idx_event_status_date", "status", "data_inicio"),
+    )
 
     # Relationships
     client = relationship("Client")

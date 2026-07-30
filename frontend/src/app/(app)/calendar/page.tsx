@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useCallback, useMemo, useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   addDays,
   startOfWeek,
@@ -8,7 +9,6 @@ import {
   format,
   subWeeks,
   addWeeks,
-  parseISO,
   isSameDay,
 } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -74,34 +74,31 @@ function EventBlock({ event }: { event: EventCard }) {
 }
 
 export default function CalendarPage() {
-  const today = new Date()
+  const queryClient = useQueryClient()
+  const today = useMemo(() => new Date(), [])
   const [currentWeekStart, setCurrentWeekStart] = useState(
     startOfWeek(today, { weekStartsOn: 1 })
   )
-  const [data, setData] = useState<SpreadsheetData | null>(null)
-  const [loading, setLoading] = useState(true)
+
   const { openForm } = useFloatingForm()
 
-  const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 })
+  const weekEnd = useMemo(
+    () => endOfWeek(currentWeekStart, { weekStartsOn: 1 }),
+    [currentWeekStart]
+  )
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    try {
-      const result = await api.get<SpreadsheetData>("/api/v1/calendar/spreadsheet", {
+  const { data, isLoading } = useQuery({
+    queryKey: ["calendar-spreadsheet", format(currentWeekStart, "yyyy-MM-dd")],
+    queryFn: () =>
+      api.get<SpreadsheetData>("/api/v1/calendar/spreadsheet", {
         start_date: format(currentWeekStart, "yyyy-MM-dd"),
         end_date: format(weekEnd, "yyyy-MM-dd"),
-      })
-      setData(result)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }, [currentWeekStart, weekEnd])
+      }),
+  })
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  const onSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["calendar-spreadsheet"] })
+  }, [queryClient])
 
   const days: Date[] = []
   let cursor = currentWeekStart
@@ -146,7 +143,7 @@ export default function CalendarPage() {
         </div>
         <Button
           onClick={() =>
-            openForm("calendar-event-form", "Novo Evento", <CalendarEventForm onSuccess={fetchData} />)
+            openForm("calendar-event-form", "Novo Evento", <CalendarEventForm onSuccess={onSuccess} />)
           }
           className="rounded-none bg-blue-600 text-white hover:bg-blue-700"
         >
@@ -173,7 +170,7 @@ export default function CalendarPage() {
 
       {/* Spreadsheet */}
       <div className="overflow-auto border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-        {loading ? (
+        {isLoading ? (
           <div className="flex h-48 items-center justify-center">
             <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
           </div>

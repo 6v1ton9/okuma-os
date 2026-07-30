@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Moon, Sun, Loader2, Save } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { Moon, Sun, Loader2 } from "lucide-react"
 import { useTheme } from "@/core/hooks/useTheme"
 import { api } from "@/core/services/api"
 import { Button } from "@/components/ui/button"
@@ -19,16 +19,11 @@ interface EventStatusConfig {
 
 export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme()
-  const [statuses, setStatuses] = useState<EventStatusConfig | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    api.get<EventStatusConfig>("/api/v1/settings/event-statuses")
-      .then(setStatuses)
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [])
+  const { data: statuses, isLoading } = useQuery({
+    queryKey: ["event-statuses"],
+    queryFn: () => api.get<EventStatusConfig>("/api/v1/settings/event-statuses"),
+  })
 
   return (
     <div className="max-w-2xl space-y-8">
@@ -69,7 +64,7 @@ export default function SettingsPage() {
           Cores dos Status da Agenda
         </h2>
         <div className="border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-950">
-          {loading ? (
+          {isLoading ? (
             <div className="flex h-32 items-center justify-center">
               <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />
             </div>
